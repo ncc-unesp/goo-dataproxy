@@ -5,6 +5,10 @@ import inspect
 
 class Storage():
     @staticmethod
+    def get_base_uri():
+        return "local:///tmp/data"
+
+    @staticmethod
     def get_scheme():
         backend_url = settings.STORAGE_BASE_URI
         return urlparse(backend_url).scheme

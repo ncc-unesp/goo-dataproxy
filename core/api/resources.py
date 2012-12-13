@@ -8,8 +8,11 @@ from tastypie.exceptions import NotFound, BadRequest
 from tastypie.utils import trailing_slash
 from tastypie import fields
 from datetime import datetime
-import os
 from core.storage.utils import Storage
+from goodataproxy import settings
+import os
+import uuid
+import slumber
 
 class UploadFileForm(forms.Form):
     name = forms.CharField(max_length=50, required=True)
@@ -46,6 +49,32 @@ class ObjectResource(Resource):
                 name="api_upload"),
             ]
 
+    def _create_object(self, name, size, url, token):
+        try:
+            api = slumber.API("http://localhost:8000/api/v1/")
+            values = {}
+            values['name'] = name
+            values['size'] = size
+            values['url'] = url
+            response = api.objects.post(values, token=token)
+        except Exception as e:
+            return False
+
+        return True
+
+    def _is_token_valid(self, request):
+        try:
+            token = request.REQUEST['token']
+        except:
+            return False
+        try:
+            api = slumber.API("http://localhost:8000/api/v1/")
+            response = api.check_token.get(token=token)
+        except Exception as e:
+            return False
+
+        return True
+
     def download(self, request=None, **kwargs):
         """Send a file through TastyPie without loading the whole file into
         memory at once. The FileWrapper will turn the file object into an
@@ -59,7 +88,7 @@ class ObjectResource(Resource):
         except Exception as e:
             return HttpResponse(status=401)
 
-        filename = '/tmp/teste.zip'
+        filename = uuid.uuid4()
         wrapper = FileWrapper(file(filename))
         response = HttpResponse(wrapper, content_type='aplication/octet-stream')
         response['Content-Disposition'] = 'filename="somefilename.pdf"'
@@ -67,21 +96,28 @@ class ObjectResource(Resource):
         return response
 
     def upload(self, request=None, **kwargs):
-        try:
-            token = request.REQUEST['token']
-        except Exception as e:
+        # Check if token is valid
+        if not self._is_token_valid(request):
             return HttpResponse(status=401)
 
+        # If form is valid save file on Storage Backend
         form = UploadFileForm(request.POST, request.FILES)
-
         if form.is_valid():
             file = request.FILES['file']
-            name = file.name
-            Storage.upload(file, name)
-            return HttpResponse(status=201)
+            name = request.POST['name']
+            filename = "%s.zip" % uuid.uuid4()
+            size = file.size
+            url = "%s/%s" % (Storage.get_base_uri(), filename)
+            token = request.REQUEST['token']
+            Storage.upload(file, filename)
         else:
             return HttpResponse(status=400)
 
+        # If object is stored create object metadata on goo-server
+        if not self._create_object(name, size, url, token):
+            return HttpResponse(status=400)
+
+        return HttpResponse(status=201)
 
     def delete(self, request=None, **kwargs):
         pass
