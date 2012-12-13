@@ -46,11 +46,6 @@ class ObjectResource(Resource):
                 name="api_upload"),
             ]
 
-    def handle_uploaded_file(self, f):
-        with open('/tmp/bla.zip', 'wb+') as destination:
-            for chunk in f.chunks():
-                destination.write(chunk)
-
     def download(self, request=None, **kwargs):
         """Send a file through TastyPie without loading the whole file into
         memory at once. The FileWrapper will turn the file object into an
