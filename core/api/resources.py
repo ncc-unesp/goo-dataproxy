@@ -51,7 +51,8 @@ class ObjectResource(Resource):
 
     def _create_object(self, name, size, url, token):
         try:
-            api = slumber.API("http://localhost:8000/api/v1/")
+            goo_server = settings.GOO_SERVER_URI
+            api = slumber.API(goo_server)
             values = {}
             values['name'] = name
             values['size'] = size
@@ -68,7 +69,8 @@ class ObjectResource(Resource):
         except:
             return False
         try:
-            api = slumber.API("http://localhost:8000/api/v1/")
+            goo_server = settings.GOO_SERVER_URI
+            api = slumber.API(goo_server)
             response = api.check_token.get(token=token)
         except Exception as e:
             return False
