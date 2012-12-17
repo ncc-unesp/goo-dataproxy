@@ -5,5 +5,5 @@ class GenericStorage():
     def download(self, file):
         raise NotImplementedError
 
-    def delete(self, file):
+    def delete(self, url=None):
         raise NotImplementedError

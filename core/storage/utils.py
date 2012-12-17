@@ -26,5 +26,9 @@ class Storage():
         pass
 
     @staticmethod
-    def delete(id):
-        pass
+    def delete(url):
+        for name, obj in inspect.getmembers(eval(Storage.get_scheme())):
+            if inspect.isclass(obj):
+                StorageClass = obj
+
+        StorageClass().delete(url)

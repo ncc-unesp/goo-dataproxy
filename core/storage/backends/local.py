@@ -1,6 +1,7 @@
 from core.storage.generic import GenericStorage
 from urlparse import urlparse
 from goodataproxy import settings
+import os
 
 class LocalStorage(GenericStorage):
     def upload(self, file, name):
@@ -13,5 +14,9 @@ class LocalStorage(GenericStorage):
     def download(self, file):
         pass
 
-    def delete(self, file):
-        pass
+    def delete(self, url):
+        filename = url.replace("local://", "")
+        try:
+            os.unlink(filename)
+        except:
+            pass

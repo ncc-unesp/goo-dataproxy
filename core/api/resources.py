@@ -41,8 +41,8 @@ class ObjectResource(Resource):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)%s$" % (self._meta.resource_name,
                                                                   trailing_slash()),
-                self.wrap_view('download'),
-                name="api_download"),
+                self.wrap_view('detail'),
+                name="api_detail"),
             url(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name,
                                                 trailing_slash()),
                 self.wrap_view('upload'),
@@ -63,6 +63,29 @@ class ObjectResource(Resource):
 
         return True
 
+    def _delete_object(self, id, token):
+        try:
+            goo_server = settings.GOO_SERVER_URI
+            api = slumber.API(goo_server)
+            api.objects(id).delete(token=token)
+        except Exception as e:
+            return e.response.status_code
+
+        # No content, default return for DELETE request
+        return 204
+
+    def _get_object_url(self, id, token):
+        try:
+            goo_server = settings.GOO_SERVER_URI
+            api = slumber.API(goo_server)
+            obj = api.objects(id).get(token=token)
+        except Exception as e:
+            return None, e.response.status_code
+
+        return obj['url'], 200
+
+
+
     def _is_token_valid(self, request):
         try:
             token = request.REQUEST['token']
@@ -77,25 +100,47 @@ class ObjectResource(Resource):
 
         return True
 
-    def download(self, request=None, **kwargs):
+    def detail(self, request=None, **kwargs):
+        # Check if token is valid
+        if not self._is_token_valid(request):
+            return HttpResponse(status=401)
+
+        try:
+            token = request.REQUEST['token']
+            object_id = kwargs['pk']
+        except Exception as e:
+            return HttpResponse(status=400)
+
+        if request.method == 'GET':
+            return self._download(object_id, token)
+        elif request.method == 'DELETE':
+            return self._delete(object_id, token)
+        else:
+            return HttpResponse(status=501)
+
+    def _download(self, token, object_id):
         """Send a file through TastyPie without loading the whole file into
         memory at once. The FileWrapper will turn the file object into an
         iterator for chunks of 8KB.
 
         No need to build a bundle here only to return a file.
         """
-        try:
-            token = request.REQUEST['token']
-            object_id = kwargs['pk']
-        except Exception as e:
-            return HttpResponse(status=401)
-
         filename = uuid.uuid4()
         wrapper = FileWrapper(file(filename))
         response = HttpResponse(wrapper, content_type='aplication/octet-stream')
         response['Content-Disposition'] = 'filename="somefilename.pdf"'
         response['Content-Length'] = os.path.getsize(filename)
         return response
+
+    def _delete(self, object_id, token):
+        object_url, status = self._get_object_url(object_id, token)
+        if status is 200 and object_url is not None:
+            status = self._delete_object(object_id, token)
+            if status is 204:
+                Storage.delete(url=object_url)
+                print "DELETE"
+
+        return HttpResponse(status=status)
 
     def upload(self, request=None, **kwargs):
         # Check if token is valid
@@ -108,7 +153,7 @@ class ObjectResource(Resource):
             file = request.FILES['file']
             name = request.POST['name']
             filename = "%s.zip" % uuid.uuid4()
-            size = file.size
+            size = file.size / 1024 / 1024 # MB
             url = "%s/%s" % (Storage.get_base_uri(), filename)
             token = request.REQUEST['token']
             Storage.upload(file, filename)
@@ -120,6 +165,3 @@ class ObjectResource(Resource):
             return HttpResponse(status=400)
 
         return HttpResponse(status=201)
-
-    def delete(self, request=None, **kwargs):
-        pass
