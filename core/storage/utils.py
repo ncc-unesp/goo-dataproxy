@@ -22,8 +22,12 @@ class Storage():
         StorageClass().upload(file, filename)
 
     @staticmethod
-    def download(id):
-        pass
+    def download(url):
+        for name, obj in inspect.getmembers(eval(Storage.get_scheme())):
+            if inspect.isclass(obj):
+                StorageClass = obj
+
+        return StorageClass().download(url)
 
     @staticmethod
     def delete(url):

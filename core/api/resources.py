@@ -1,6 +1,5 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 from django import forms
-from django.core.servers.basehttp import FileWrapper
 from django.http import HttpResponse
 from django.conf.urls import url
 from tastypie.resources import Resource
@@ -118,19 +117,14 @@ class ObjectResource(Resource):
         else:
             return HttpResponse(status=501)
 
-    def _download(self, token, object_id):
-        """Send a file through TastyPie without loading the whole file into
-        memory at once. The FileWrapper will turn the file object into an
-        iterator for chunks of 8KB.
+    def _download(self, object_id, token):
+        object_url, status = self._get_object_url(object_id, token)
+        if status != 200 or object_url is None:
+            return HttpResponse(status=status)
 
-        No need to build a bundle here only to return a file.
-        """
-        filename = uuid.uuid4()
-        wrapper = FileWrapper(file(filename))
-        response = HttpResponse(wrapper, content_type='aplication/octet-stream')
-        response['Content-Disposition'] = 'filename="somefilename.pdf"'
-        response['Content-Length'] = os.path.getsize(filename)
+        response = Storage.download(url=object_url)
         return response
+
 
     def _delete(self, object_id, token):
         object_url, status = self._get_object_url(object_id, token)
@@ -138,7 +132,6 @@ class ObjectResource(Resource):
             status = self._delete_object(object_id, token)
             if status is 204:
                 Storage.delete(url=object_url)
-                print "DELETE"
 
         return HttpResponse(status=status)
 
