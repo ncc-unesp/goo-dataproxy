@@ -93,7 +93,7 @@ class ObjectResource(Resource):
         try:
             goo_server = settings.GOO_SERVER_URI
             api = slumber.API(goo_server)
-            response = api.check_token.get(token=token)
+            response = api.token.get(token=token)
         except Exception as e:
             return False
 
