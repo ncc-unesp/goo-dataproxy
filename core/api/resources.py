@@ -3,15 +3,27 @@ from django import forms
 from django.http import HttpResponse
 from django.conf.urls import url
 from tastypie.resources import Resource
-from tastypie.exceptions import NotFound, BadRequest
 from tastypie.utils import trailing_slash
 from tastypie import fields
 from datetime import datetime
 from core.storage.utils import Storage
+from api.goo import GooAPI
+from api.exceptions import HttpClientError, HttpServerError
 from goodataproxy import settings
+from tastypie.exceptions import ImmediateHttpResponse
 import os
 import uuid
-import slumber
+
+
+def translate_gooapi_to_tastypie_exception(f):
+    def _f(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except HttpClientError as e:
+            raise ImmediateHttpResponse(HttpResponse(status=e.code))
+        except HttpServerError as e:
+            raise ImmediateHttpResponse(HttpResponse(status=500))
+    return _f
 
 class UploadFileForm(forms.Form):
     name = forms.CharField(max_length=50, required=True)
@@ -36,6 +48,7 @@ class ObjectResource(Resource):
         # return object on POST request
         always_return_data = True
 
+
     def override_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)%s$" % (self._meta.resource_name,
@@ -48,96 +61,41 @@ class ObjectResource(Resource):
                 name="api_upload"),
             ]
 
-    def _create_object(self, name, size, url, token):
-        try:
-            goo_server = settings.GOO_SERVER_URI
-            api = slumber.API(goo_server)
-            values = {}
-            values['name'] = name
-            values['size'] = size
-            values['url'] = url
-            response = api.objects.post(values, token=token)
-        except Exception as e:
-            return False
-
-        return True
-
-    def _delete_object(self, id, token):
-        try:
-            goo_server = settings.GOO_SERVER_URI
-            api = slumber.API(goo_server)
-            api.objects(id).delete(token=token)
-        except Exception as e:
-            return e.response.status_code
-
-        # No content, default return for DELETE request
-        return 204
-
-    def _get_object_url(self, id, token):
-        try:
-            goo_server = settings.GOO_SERVER_URI
-            api = slumber.API(goo_server)
-            obj = api.objects(id).get(token=token)
-        except Exception as e:
-            return None, e.response.status_code
-
-        return obj['url'], 200
-
-
-
-    def _is_token_valid(self, request):
-        try:
-            token = request.REQUEST['token']
-        except:
-            return False
-        try:
-            goo_server = settings.GOO_SERVER_URI
-            api = slumber.API(goo_server)
-            response = api.token.get(token=token)
-        except Exception as e:
-            return False
-
-        return True
-
     def detail(self, request=None, **kwargs):
-        # Check if token is valid
-        if not self._is_token_valid(request):
-            return HttpResponse(status=401)
+        """
+        Called when accessing GET,DELETE /dataproxy/objects/{id}/
+        """
+
+        method = request.method
 
         try:
             token = request.REQUEST['token']
             object_id = kwargs['pk']
-        except Exception as e:
-            return HttpResponse(status=400)
+        except KeyError as e:
+            return HttpResponse(status=401)
 
-        if request.method == 'GET':
-            return self._download(object_id, token)
-        elif request.method == 'DELETE':
-            return self._delete(object_id, token)
+        # Check if token is valid
+        if self._is_token_valid(token):
+            if method == 'GET':
+                return self._download(object_id, token)
+            elif method == 'DELETE':
+                return self._delete(object_id, token)
+            else:
+                return HttpResponse(status=501)
         else:
-            return HttpResponse(status=501)
-
-    def _download(self, object_id, token):
-        object_url, status = self._get_object_url(object_id, token)
-        if status != 200 or object_url is None:
-            return HttpResponse(status=status)
-
-        response = Storage.download(url=object_url)
-        return response
-
-
-    def _delete(self, object_id, token):
-        object_url, status = self._get_object_url(object_id, token)
-        if status is 200 and object_url is not None:
-            status = self._delete_object(object_id, token)
-            if status is 204:
-                Storage.delete(url=object_url)
-
-        return HttpResponse(status=status)
+            return HttpResponse(status=401)
 
     def upload(self, request=None, **kwargs):
+        """
+        Called when accessing POST /dataproxy/objects/
+        """
+        try:
+            token = request.REQUEST['token']
+        except KeyError as e:
+            return HttpResponse(status=401)
+
         # Check if token is valid
-        if not self._is_token_valid(request):
+        if not self._is_token_valid(token):
             return HttpResponse(status=401)
 
         # If form is valid save file on Storage Backend
@@ -158,3 +116,60 @@ class ObjectResource(Resource):
             return HttpResponse(status=400)
 
         return HttpResponse(status=201)
+
+    @translate_gooapi_to_tastypie_exception
+    def _create_object(self, name, size, url, token):
+        goo_server = settings.GOO_SERVER_URI
+        api = GooAPI(goo_server, debug=True)
+        values = {}
+        values['name'] = name
+        values['size'] = size
+        values['url'] = url
+        response = api.objects.post(values, token=token)
+
+        return True
+
+    @translate_gooapi_to_tastypie_exception
+    def _get_object_url(self, id, token):
+        goo_server = settings.GOO_SERVER_URI
+        api = GooAPI(goo_server, debug=True)
+        obj = api.objects(id).get(token=token)
+
+        return obj['url']
+
+    @translate_gooapi_to_tastypie_exception
+    def _is_token_valid(self, token):
+        goo_server = settings.GOO_SERVER_URI
+        api = GooAPI(goo_server, debug=False)
+        response = api.token.get(token=token)
+        if response['expire_time']:
+            return True
+        else:
+            return False
+
+
+    @translate_gooapi_to_tastypie_exception
+    def _download(self, object_id, token):
+        object_url = self._get_object_url(object_id, token)
+        response = Storage.download(url=object_url)
+        return response
+
+    @translate_gooapi_to_tastypie_exception
+    def _delete_object(self, id, token):
+        """
+        Delete a meta data object from database.
+        """
+        goo_server = settings.GOO_SERVER_URI
+        api = GooAPI(goo_server, debug=True)
+        api.objects(id).delete(token=token)
+
+    @translate_gooapi_to_tastypie_exception
+    def _delete(self, object_id, token):
+        """
+        Get a object url and delete object metadata from database and
+        delete object from Storage.
+        """
+        object_url = self._get_object_url(object_id, token)
+        Storage.delete(url=object_url)
+        self._delete_object(object_id, token)
+        return HttpResponse(status=204)
