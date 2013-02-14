@@ -7,8 +7,8 @@ from tastypie.utils import trailing_slash
 from tastypie import fields
 from datetime import datetime
 from core.storage.utils import Storage
-from gooclient.api import API
-from gooclient.exceptions import HttpClientError, HttpServerError
+from gooclientlib.api import API
+from gooclientlib.exceptions import HttpClientError, HttpServerError
 from goodataproxy import settings
 from tastypie.exceptions import ImmediateHttpResponse
 import os
