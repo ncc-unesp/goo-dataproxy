@@ -7,8 +7,8 @@ from tastypie.utils import trailing_slash
 from tastypie import fields
 from datetime import datetime
 from core.storage.utils import Storage
-from api.goo import GooAPI
-from api.exceptions import HttpClientError, HttpServerError
+from gooclient.api import API
+from gooclient.exceptions import HttpClientError, HttpServerError
 from goodataproxy import settings
 from tastypie.exceptions import ImmediateHttpResponse
 import os
@@ -120,28 +120,28 @@ class ObjectResource(Resource):
     @translate_gooapi_to_tastypie_exception
     def _create_object(self, name, size, url, token):
         goo_server = settings.GOO_SERVER_URI
-        api = GooAPI(goo_server, debug=True)
+        server = API(goo_server, debug=True)
         values = {}
         values['name'] = name
         values['size'] = size
         values['url'] = url
-        response = api.objects.post(values, token=token)
+        response = server.objects.post(values, token=token)
 
         return True
 
     @translate_gooapi_to_tastypie_exception
     def _get_object_url(self, id, token):
         goo_server = settings.GOO_SERVER_URI
-        api = GooAPI(goo_server, debug=True)
-        obj = api.objects(id).get(token=token)
+        server = API(goo_server, debug=True)
+        obj = server.objects(id).get(token=token)
 
         return obj['url']
 
     @translate_gooapi_to_tastypie_exception
     def _is_token_valid(self, token):
         goo_server = settings.GOO_SERVER_URI
-        api = GooAPI(goo_server, debug=False)
-        response = api.token.get(token=token)
+        server = API(goo_server, debug=False)
+        response = server.token.get(token=token)
         if response['expire_time']:
             return True
         else:
@@ -160,8 +160,8 @@ class ObjectResource(Resource):
         Delete a meta data object from database.
         """
         goo_server = settings.GOO_SERVER_URI
-        api = GooAPI(goo_server, debug=True)
-        api.objects(id).delete(token=token)
+        server = API(goo_server, debug=True)
+        server.objects(id).delete(token=token)
 
     @translate_gooapi_to_tastypie_exception
     def _delete(self, object_id, token):
