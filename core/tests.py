@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-# TODO: Rename gooclient to gooclientlib
 from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
+import hashlib
 
 import json
 
@@ -19,7 +19,7 @@ class ObjectResourceTest(TestCase):
         self.server = API(self.endpoint, debug=False)
 
         # Create one token
-        self.token = '782dd0a8-02f6-4169-baf7-b30c58dd7b25'
+        self.token = '0ef37492-6f3b-4446-8350-74e080e352ba'
         self.bad_token = 'not-a-valid-token'
 
     def test_token_missing(self):
@@ -40,74 +40,52 @@ class ObjectResourceTest(TestCase):
         except Exception as e:
             self.fail("Another exception %s" % e)
 
-    # TODO: return object id after upload
     def test_upload(self):
         try:
             f = open(self.filename, 'r')
             object_data = {'name': "%s" % self.object_name,
                            'file': f}
-
             result = self.server.objects.post(data=object_data, token=self.token)
             f.close()
+            return result['resource_uri']
         except HttpClientError as e:
             self.fail('Return code == %d' % e.code)
         except Exception as e:
             self.fail("Another exception %s" % e)
+
+    def _sha1(self, data):
+        sha1 = hashlib.sha1()
+        sha1.update(data)
+        return sha1.hexdigest()
 
     # TODO: do a sha1 or md5 check
     def test_download(self):
-        self.test_upload()
+        resource_uri = self.test_upload()
+        oid = int(resource_uri.split('/')[-2:][0])
+
+        f = open(self.filename, "r")
+        original_sha1 = self._sha1(f.read())
+        f.close()
 
         try:
-            result = self.server.objects(1).get(token=self.token)
+            result = self.server.objects(oid).get(token=self.token)
         except HttpClientError as e:
             self.fail('Return code == %d' % e.code)
         except Exception as e:
             self.fail("Another exception %s" % e)
 
+        download_sha1 = self._sha1(result)
 
+        if original_sha1 != download_sha1:
+            self.fail("Sha1 different")
 
+    def test_delete(self):
+        resource_uri = self.test_upload()
+        oid = int(resource_uri.split('/')[-2:][0])
 
-
-#    def test_download(self):
-#
-#    def test_delete(self):
-#        self.job.status='P'
-#        self.job.save()
-#
-#        data = {"time_left": 60}
-#        token = self.pilot.token
-#        url = "%s?token=%s" % (self.endpoint, token)
-#        request = self.client.post(url, self.format, data=data)
-#        self.assertHttpCreated(request)
-#
-#    def test_pilot_get_job(self):
-#        self.job.status='R'
-#        self.job.pilot = self.pilot
-#        self.job.save()
-#
-#        token = self.pilot.token
-#        url = "%s%d/?token=%s" % (self.endpoint, self.job.id, token)
-#        request = self.client.get(url, self.format)
-#        self.assertValidJSONResponse(request)
-#
-#    def test_wrong_token(self):
-#        url = "%s%d/?token=%s" % (self.endpoint, self.job.id, "not-a-valid-token")
-#        request = self.client.get(url, self.format)
-#        self.assertHttpUnauthorized(request)
-#
-#    def test_no_token(self):
-#        url = "%s%d/" % (self.endpoint, self.job.id)
-#        request = self.client.get(url, self.format)
-#        self.assertHttpUnauthorized(request)
-#
-#    def test_pilot_patch_job(self):
-#        self.job.status='R'
-#        self.job.pilot = self.pilot
-#        self.job.save()
-#
-#        data = {"progress": 50}
-#        token = self.pilot.token
-#        url = "%s%d/?token=%s" % (self.endpoint, self.job.id, token)
-#        request = self.client.patch(url, self.format, data=data)
-#        self.assertHttpAccepted(request)
+        try:
+            result = self.server.objects(oid).delete(token=self.token)
+        except HttpClientError as e:
+            self.fail('Return code == %d' % e.code)
+        except Exception as e:
+            self.fail("Another exception %s" % e)

@@ -19,7 +19,7 @@ class LocalStorage(GenericStorage):
 
     def download(self, url):
         filename = url.replace("local://", "")
-	return file(filename)        
+        return file(filename)
 
     def delete(self, url):
         filename = url.replace("local://", "")

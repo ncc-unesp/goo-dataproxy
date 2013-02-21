@@ -6,3 +6,9 @@ REQUIREMENTS
 ============
 
    $ sudo pip install -r requirements.txt
+
+
+TESTS
+=====
+
+    $ python -munittest tests
