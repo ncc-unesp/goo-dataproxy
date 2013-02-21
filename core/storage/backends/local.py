@@ -15,15 +15,8 @@ class LocalStorage(GenericStorage):
 
     def download(self, url):
         filename = url.replace("local://", "")
-        wrapper = FileWrapper(file(filename))
-        response = HttpResponse(wrapper, content_type='aplication/octet-stream')
-        response['Content-Disposition'] = 'filename="somefilename.pdf"'
-        response['Content-Length'] = os.path.getsize(filename)
-        return response
-
+	return file(filename)        
+	
     def delete(self, url):
         filename = url.replace("local://", "")
-        try:
-            os.unlink(filename)
-        except:
-            pass
+        os.unlink(filename)
