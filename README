@@ -10,5 +10,10 @@ REQUIREMENTS
 
 TESTS
 =====
+    $ python-coverage run --source='core' ./manage.py runserver 8001 --pythonpath=$PWD/../python-gooclientlib --noreload
 
-    $ python -munittest tests
+    $ cd core; python -munittest tests; cd -
+
+    $ python-coverage html -d docs/coverage
+
+    $ xdg-open docs/coverage/index.html 
