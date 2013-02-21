@@ -4,6 +4,7 @@ from tastypie.bundle import Bundle
 from tastypie import fields
 from core.storage.utils import Storage
 from gooclientlib.api import API
+from gooclientlib.exceptions import HttpClientError
 from goodataproxy import settings
 import uuid
 
@@ -30,7 +31,7 @@ class DataObject(object):
         return self
 
     def file(self):
-	""" Must call load(oid) load before """
+        """ Must call load(oid) load before """
         return Storage.download(url=self.url)
 
     def save(self, name, req_file):
@@ -50,7 +51,7 @@ class DataObject(object):
         self.oid = response["id"]
 
     def delete(self):
-	""" Must call load(oid) load before """
+        """ Must call load(oid) load before """
         # content data deletion
         Storage.delete(url=self.url)
         # metadata deletion
@@ -66,7 +67,14 @@ class TokenAuthentication(Authentication):
 
         goo_server = settings.GOO_SERVER_URI
         server = API(goo_server, debug=False)
-        response = server.token.get(token=token)
+        try:
+            response = server.token.get(token=token)
+        except HttpClientError as e:
+            if e.code == 401:
+                return False
+            else:
+                raise e
+
         if response['expire_time']:
             request.token = token
             return True
@@ -154,7 +162,7 @@ class ObjectResource(Resource):
         return super(ObjectResource, self).deserialize(request, data, format)
 
     def dehydrate(self, bundle):
-	# only return resource_uri
+        # only return resource_uri
         resource_uri = bundle.data['resource_uri']
-	bundle.data = {"resource_uri": resource_uri}
+        bundle.data = {"resource_uri": resource_uri}
         return bundle

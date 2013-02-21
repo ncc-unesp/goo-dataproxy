@@ -19,7 +19,7 @@ class ObjectResourceTest(TestCase):
         self.server = API(self.endpoint, debug=False)
 
         # Create one token
-        self.token = '0ef37492-6f3b-4446-8350-74e080e352ba'
+        self.token = '2bae7fa7-5810-4664-8264-725fa3a714b1'
         self.bad_token = 'not-a-valid-token'
 
     def test_token_missing(self):
