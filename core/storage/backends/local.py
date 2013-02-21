@@ -9,6 +9,10 @@ class LocalStorage(GenericStorage):
     def upload(self, file, name):
         dst = urlparse(settings.STORAGE_BASE_URI).path
         output = "%s/%s" % (dst, name)
+
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+
         with open(output, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
@@ -16,7 +20,7 @@ class LocalStorage(GenericStorage):
     def download(self, url):
         filename = url.replace("local://", "")
 	return file(filename)        
-	
+
     def delete(self, url):
         filename = url.replace("local://", "")
         os.unlink(filename)
