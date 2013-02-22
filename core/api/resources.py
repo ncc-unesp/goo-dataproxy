@@ -49,6 +49,7 @@ class DataObject(object):
         response = self.server.objects.post(values, token=self.token)
 
         self.oid = response["id"]
+        self.resource_uri = response["resource_uri"]
 
     def delete(self):
         """ Must call load(oid) load before """
@@ -131,8 +132,7 @@ class ObjectResource(Resource):
         response = HttpResponse(FileWrapper(obj.file()),
                                 content_type='application/octet-stream')
         response['Content-Disposition'] = 'attachment; filename=%s' % obj.name
-
-        response['Content-Length'] = bundle.obj.size
+        response['Content-Length'] = obj.size
 
         return response
 
@@ -166,6 +166,5 @@ class ObjectResource(Resource):
 
     def dehydrate(self, bundle):
         # only return resource_uri
-        resource_uri = bundle.data['resource_uri']
-        bundle.data = {"resource_uri": resource_uri}
+        bundle.data = {"resource_uri": bundle.obj.resource_uri}
         return bundle
