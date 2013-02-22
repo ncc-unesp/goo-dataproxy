@@ -39,7 +39,7 @@ class DataObject(object):
 
         # internal storage name
         filename = "%s" % uuid.uuid4()
-        self.size = req_file.size / 1024**2 # MB
+        self.size = req_file.size
         self.url = "%s/%s" % (Storage.get_base_uri(), filename)
         Storage.upload(req_file, filename)
 
@@ -132,8 +132,7 @@ class ObjectResource(Resource):
                                 content_type='application/octet-stream')
         response['Content-Disposition'] = 'attachment; filename=%s' % obj.name
 
-        # In MB!! Cant do that
-        #response['Content-Length'] = bundle.obj.size
+        response['Content-Length'] = bundle.obj.size
 
         return response
 
