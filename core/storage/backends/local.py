@@ -11,7 +11,7 @@ class LocalStorage(GenericStorage):
         output = "%s/%s" % (dst, name)
 
         if not os.path.exists(dst):
-            os.makedirs(dst)
+            os.makedirs(dst) # pragma: no cover
 
         with open(output, 'wb+') as destination:
             for chunk in file.chunks():
