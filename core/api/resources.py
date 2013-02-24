@@ -2,7 +2,7 @@
 from tastypie.resources import Resource
 from tastypie.bundle import Bundle
 from tastypie import fields
-from core.storage.utils import Storage
+from core import storage
 from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
 from goodataproxy import settings
@@ -32,7 +32,7 @@ class DataObject(object):
 
     def file(self):
         """ Must call load(oid) load before """
-        return Storage.download(url=self.url)
+        return storage.download(url=self.url)
 
     def save(self, name, req_file):
         self.name = name
@@ -40,8 +40,7 @@ class DataObject(object):
         # internal storage name
         filename = "%s" % uuid.uuid4()
         self.size = req_file.size
-        self.url = "%s/%s" % (Storage.get_base_uri(), filename)
-        Storage.upload(req_file, filename)
+        self.url = storage.upload(req_file, filename)
 
         values = {"name": self.name,
                   "size": self.size,
@@ -54,7 +53,7 @@ class DataObject(object):
     def delete(self):
         """ Must call load(oid) load before """
         # content data deletion
-        Storage.delete(url=self.url)
+        storage.delete(url=self.url)
         # metadata deletion
         self.server.objects(self.oid).delete(token=self.token)
 
