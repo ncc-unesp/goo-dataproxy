@@ -6,7 +6,7 @@ from core import storage
 from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
 from goodataproxy import settings
-import uuid
+import uuid, zipfile, tempfile, os
 
 from django.http import HttpResponse
 from django.core.servers.basehttp import FileWrapper
@@ -39,7 +39,7 @@ class DataObject(object):
 
         # internal storage name
         filename = "%s" % uuid.uuid4()
-        self.size = req_file.size
+        self.size = os.path.getsize(req_file)
         self.url = storage.upload(req_file, filename)
 
         values = {"name": self.name,
@@ -136,12 +136,50 @@ class ObjectResource(Resource):
         return response
 
     def obj_create(self, bundle, **kwargs):
-        req_file = bundle.data['file']
+        # check to see if is a single file (zip)
+        # or multiples (must set compress=1)
+        compress = bundle.data.has_key('compress')
+        if compress:
+            #do compress
+            fd, filepath = tempfile.mkstemp('.zip')
+            os.close(fd)
+            zf = zipfile.ZipFile(filepath, mode='a')
+
+            print bundle.data['files']
+            for f in bundle.data['files'].values():
+                #save on disk
+                tmp_fd, tmp_fp = tempfile.mkstemp()
+                for chunk in f.chunks():
+                    os.write(tmp_fd, chunk)
+                os.close(tmp_fd)
+
+                #add to zip
+                zf.write(tmp_fp, f.name)
+                #delete
+                os.unlink(tmp_fp)
+
+            req_file = filepath
+            size = os.path.getsize(filepath)
+
+        else:
+            # Old version: requires file as "file"
+            #req_file = bundle.data['files']['file']
+            # New version: get a single file
+            req_file = bundle.data['files'].keys()[0]
+
+            fd, filepath = tempfile.mkstemp()
+            os.close(fd)
+            with open(filepath, 'wb+') as destination:
+                for chunk in req_file.chunks():
+                    destination.write(chunk)
+
         name = bundle.data['name']
 
         bundle.obj = DataObject(bundle.request.token)
         bundle.obj.save(name, req_file)
 
+        # Force tempfile to be removed
+        os.unlink(filepath)
         return bundle
 
     def obj_delete(self, request=None, **kwargs):
@@ -156,7 +194,8 @@ class ObjectResource(Resource):
             return request.POST #pragma: no cover
         if format.startswith('multipart'):
             data = request.POST.copy()
-            data.update(request.FILES)
+            data.update(request.GET.copy())
+            data['files'] = request.FILES
             return data
         return super(ObjectResource,
                      self).deserialize(request,

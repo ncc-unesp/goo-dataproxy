@@ -58,6 +58,10 @@ LOGGING = {
     }
 }
 
+MIDDLEWARE_CLASSES = (
+    'goodataproxy.middleware.crossdomainxhr.XsSharing',
+)
+
 # Local or GridFTP
 STORAGE_BASE_URI = "local:///tmp/data"
 #STORAGE_BASE_URI = "gridftp://se:80/gridftp/"

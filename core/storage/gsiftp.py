@@ -18,13 +18,17 @@ def _is_local(url):
 
 def upload(file_obj, name):
     dst = urlparse(settings.STORAGE_BASE_URI).path
+    input_file = open(file_obj, 'r')
     output = "%s/%s" % (dst, name)
 
     if not os.path.exists(dst):
         os.makedirs(dst) # pragma: no cover
 
     with open(output, 'wb+') as destination:
-        for chunk in file_obj.chunks():
+        while True:
+            chunk = input_file.read(1024)
+            if not chunk:
+                break
             destination.write(chunk)
 
     return "%s/%s" % (settings.STORAGE_BASE_URI, name)
