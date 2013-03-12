@@ -145,7 +145,6 @@ class ObjectResource(Resource):
             os.close(fd)
             zf = zipfile.ZipFile(filepath, mode='a')
 
-            print bundle.data['files']
             for f in bundle.data['files'].values():
                 #save on disk
                 tmp_fd, tmp_fp = tempfile.mkstemp()
@@ -158,6 +157,7 @@ class ObjectResource(Resource):
                 #delete
                 os.unlink(tmp_fp)
 
+            zf.close()
             req_file = filepath
             size = os.path.getsize(filepath)
 
