@@ -36,7 +36,7 @@ def upload(file_obj, name):
 def download(url):
     if not _is_local(url):
         # get file remote file
-        local_url = 'file://%s' % urlparse(settings.STORAGE_BASE_URI).path
+        local_url = 'file://%s/' % urlparse(settings.STORAGE_BASE_URI).path
         ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
 
         if (ret_code != 0):
