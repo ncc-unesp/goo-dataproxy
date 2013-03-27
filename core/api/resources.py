@@ -69,17 +69,28 @@ class TokenAuthentication(Authentication):
         server = API(goo_server, debug=False)
         try:
             response = server.token.get(token=token)
+            if response['expire_time']:
+                request.token = token
+                return True
+            else:
+                return False # pragma: no cover
         except HttpClientError as e:
             if e.code == 401:
-                return False
+                # maybe a pilot token
+                try:
+                    response = server.pilot.token.get(token=token)
+                    if response['valid']:
+                        request.token = token
+                        return True
+                    else:
+                        return False
+                except HttpClientError as e:
+                    if e.code == 401:
+                        return False
+                    else:
+                        raise e # pragma: no cover
             else:
                 raise e # pragma: no cover
-
-        if response['expire_time']:
-            request.token = token
-            return True
-        else:
-            return False # pragma: no cover
 
         return False # pragma: no cover
 
