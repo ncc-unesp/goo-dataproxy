@@ -169,14 +169,12 @@ class ObjectResource(Resource):
                 os.unlink(tmp_fp)
 
             zf.close()
-            req_file = filepath
-            size = os.path.getsize(filepath)
 
         else:
             # Old version: requires file as "file"
             #req_file = bundle.data['files']['file']
             # New version: get a single file
-            req_file = bundle.data['files'].keys()[0]
+            req_file = bundle.data['files'].values()[0]
 
             fd, filepath = tempfile.mkstemp()
             os.close(fd)
@@ -187,7 +185,7 @@ class ObjectResource(Resource):
         name = bundle.data['name']
 
         bundle.obj = DataObject(bundle.request.token)
-        bundle.obj.save(name, req_file)
+        bundle.obj.save(name, filepath)
 
         # Force tempfile to be removed
         os.unlink(filepath)
