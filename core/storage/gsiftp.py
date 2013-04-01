@@ -1,7 +1,7 @@
 from urlparse import urlparse
 from goodataproxy import settings
 from django.core.servers.basehttp import FileWrapper
-import os
+import os, tempfile
 from subprocess import Popen, PIPE, call
 
 GRIDFTP_COPY = "/usr/bin/globus-url-copy"
@@ -35,17 +35,29 @@ def upload(file_obj, name):
 
 def download(url):
     if not _is_local(url):
+        # try to get a cache version
+        basename = url.split("/")[-1]
+        cache_dir = urlparse(settings.STORAGE_BASE_URI).path
+        filename = os.path.join(cache_dir, basename)
+
+        os.path.exists(filename):
+            break
+
         # get file remote file
-        local_url = 'file://%s/' % urlparse(settings.STORAGE_BASE_URI).path
+        (tmp_fd, tmp_file) = tempfile.mkstemp(dir=cache_dir)
+        os.close(tmp_fd)
+
+        local_url = 'file://%s' % os.path.abspath(tmp_file)
         ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
 
         if (ret_code != 0):
             raise ObjectDownloadError
 
-        basename = url.split("/")[-1]
-        url = "%s/%s" % (settings.STORAGE_BASE_URI, basename)
+        os.rename(tmp_file, filename)
 
-    filename = urlparse(url).path
+    else:
+        filename = urlparse(url).path
+
     return open(filename, 'r')
 
 def delete(url):
