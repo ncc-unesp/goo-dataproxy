@@ -40,20 +40,18 @@ def download(url):
         cache_dir = urlparse(settings.STORAGE_BASE_URI).path
         filename = os.path.join(cache_dir, basename)
 
-        os.path.exists(filename):
-            break
+        if not os.path.exists(filename):
+            # get file remote file
+            (tmp_fd, tmp_file) = tempfile.mkstemp(dir=cache_dir)
+            os.close(tmp_fd)
 
-        # get file remote file
-        (tmp_fd, tmp_file) = tempfile.mkstemp(dir=cache_dir)
-        os.close(tmp_fd)
+            local_url = 'file://%s' % os.path.abspath(tmp_file)
+            ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
 
-        local_url = 'file://%s' % os.path.abspath(tmp_file)
-        ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
+            if (ret_code != 0):
+                raise ObjectDownloadError
 
-        if (ret_code != 0):
-            raise ObjectDownloadError
-
-        os.rename(tmp_file, filename)
+            os.rename(tmp_file, filename)
 
     else:
         filename = urlparse(url).path
