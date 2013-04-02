@@ -38,7 +38,7 @@ def download(url):
         # try to get a cache version
         basename = url.split("/")[-1]
         server_dir = urlparse(settings.STORAGE_BASE_URI).path
-        cache_dir = os.path.join(cache_dir, 'cache')
+        cache_dir = os.path.join(server_dir, 'cache')
         filename = os.path.join(cache_dir, basename)
 
         if not os.path.exists(filename):
