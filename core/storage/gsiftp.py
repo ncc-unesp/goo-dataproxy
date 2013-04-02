@@ -37,7 +37,8 @@ def download(url):
     if not _is_local(url):
         # try to get a cache version
         basename = url.split("/")[-1]
-        cache_dir = urlparse(settings.STORAGE_BASE_URI).path
+        server_dir = urlparse(settings.STORAGE_BASE_URI).path
+        cache_dir = os.path.join(cache_dir, 'cache')
         filename = os.path.join(cache_dir, basename)
 
         if not os.path.exists(filename):
