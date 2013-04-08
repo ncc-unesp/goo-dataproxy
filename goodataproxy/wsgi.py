@@ -14,8 +14,12 @@ framework.
 
 """
 import os
+import sys
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "goodataproxy.settings")
+
+# Add python-gooclientlib in the path
+sys.path.insert(0, "/var/lib/goo/python-gooclientlib")
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
