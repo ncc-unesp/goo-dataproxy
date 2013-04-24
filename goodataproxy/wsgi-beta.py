@@ -16,7 +16,7 @@ framework.
 import os
 import sys
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "goodataproxy.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "goodataproxy.settings.beta")
 
 # Add python-gooclientlib in the path
 sys.path.insert(0, "/var/lib/goo/python-gooclientlib")
