@@ -1,5 +1,6 @@
 # Django settings for goodataproxy project.
 
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
