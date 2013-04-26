@@ -1,5 +1,5 @@
 from urlparse import urlparse
-from goodataproxy import settings
+from django.conf import settings
 import local, gsiftp
 
 def _get_backend_method(method):

@@ -5,7 +5,7 @@ from tastypie import fields
 from core import storage
 from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
-from goodataproxy import settings
+from django.conf import settings
 import uuid, zipfile, tempfile, os
 
 from django.http import HttpResponse

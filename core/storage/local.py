@@ -1,5 +1,5 @@
 from urlparse import urlparse
-from goodataproxy import settings
+from django.conf import settings
 from django.core.servers.basehttp import FileWrapper
 import os
 
