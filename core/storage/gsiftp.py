@@ -1,69 +1,71 @@
-from urlparse import urlparse
-from django.conf import settings
-from django.core.servers.basehttp import FileWrapper
-import os, tempfile
-from subprocess import Popen, PIPE, call
+# Deprecated
 
-GRIDFTP_COPY = "/usr/bin/globus-url-copy"
-GRIDFTP_DELETE = "/usr/bin/edg-gridftp-rm"
+#from urlparse import urlparse
+#from django.conf import settings
+#from django.core.servers.basehttp import FileWrapper
+#import os, tempfile
+#from subprocess import Popen, PIPE, call
 
-class ObjectDownloadError(Exception):
-    pass
+#GRIDFTP_COPY = "/usr/bin/globus-url-copy"
+#GRIDFTP_DELETE = "/usr/bin/edg-gridftp-rm"
 
-class ObjectDeleteError(Exception):
-    pass
+#class ObjectDownloadError(Exception):
+#    pass
 
-def _is_local(url):
-    return url.startswith(settings.STORAGE_BASE_URI)
+#class ObjectDeleteError(Exception):
+#    pass
 
-def upload(file_obj, name):
-    dst = urlparse(settings.STORAGE_BASE_URI).path
-    input_file = open(file_obj, 'r')
-    output = "%s/%s" % (dst, name)
+#def _is_local(url):
+#    return url.startswith(settings.STORAGE_BASE_URI)
 
-    if not os.path.exists(dst):
-        os.makedirs(dst) # pragma: no cover
+#def upload(file_obj, name):
+#    dst = urlparse(settings.STORAGE_BASE_URI).path
+#    input_file = open(file_obj, 'r')
+#    output = "%s/%s" % (dst, name)
 
-    with open(output, 'wb+') as destination:
-        while True:
-            chunk = input_file.read(1024)
-            if not chunk:
-                break
-            destination.write(chunk)
+#    if not os.path.exists(dst):
+#        os.makedirs(dst) # pragma: no cover
 
-    return "%s/%s" % (settings.STORAGE_BASE_URI, name)
+#    with open(output, 'wb+') as destination:
+#        while True:
+#            chunk = input_file.read(1024)
+#            if not chunk:
+#                break
+#            destination.write(chunk)
 
-def download(url):
-    if not _is_local(url):
-        # try to get a cache version
-        basename = url.split("/")[-1]
-        server_dir = urlparse(settings.STORAGE_BASE_URI).path
-        cache_dir = os.path.join(server_dir, 'cache')
-        filename = os.path.join(cache_dir, basename)
+#    return "%s/%s" % (settings.STORAGE_BASE_URI, name)
 
-        if not os.path.exists(filename):
-            # get file remote file
-            (tmp_fd, tmp_file) = tempfile.mkstemp(dir=cache_dir)
-            os.close(tmp_fd)
+#def download(url):
+#    if not _is_local(url):
+#        # try to get a cache version
+#        basename = url.split("/")[-1]
+#        server_dir = urlparse(settings.STORAGE_BASE_URI).path
+#        cache_dir = os.path.join(server_dir, 'cache')
+#        filename = os.path.join(cache_dir, basename)
 
-            local_url = 'file://%s' % os.path.abspath(tmp_file)
-            ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
+#        if not os.path.exists(filename):
+#            # get file remote file
+#            (tmp_fd, tmp_file) = tempfile.mkstemp(dir=cache_dir)
+#            os.close(tmp_fd)
 
-            if (ret_code != 0):
-                raise ObjectDownloadError
+#            local_url = 'file://%s' % os.path.abspath(tmp_file)
+#            ret_code = call([GRIDFTP_COPY, url, local_url], close_fds=True)
 
-            os.rename(tmp_file, filename)
+#            if (ret_code != 0):
+#                raise ObjectDownloadError
 
-    else:
-        filename = urlparse(url).path
+#            os.rename(tmp_file, filename)
 
-    return open(filename, 'r')
+#    else:
+#        filename = urlparse(url).path
 
-def delete(url):
-    if not _is_local(url):
-        ret_code = call([GRIDFTP_DELETE, url], close_fds=True)
-        if (ret_code != 0):
-            raise ObjectDeleteError
-    else:
-        filename = urlparse(url).path
-        os.unlink(filename)
+#    return open(filename, 'r')
+
+#def delete(url):
+#    if not _is_local(url):
+#        ret_code = call([GRIDFTP_DELETE, url], close_fds=True)
+#        if (ret_code != 0):
+#            raise ObjectDeleteError
+#    else:
+#        filename = urlparse(url).path
+#        os.unlink(filename)

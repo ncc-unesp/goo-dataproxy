@@ -3,13 +3,12 @@ from django.conf import settings
 from django.core.servers.basehttp import FileWrapper
 import os
 
-def upload(file_obj, name):
-    dst = urlparse(settings.STORAGE_BASE_URI).path
-    input_file = open(file_obj, 'r')
-    output = "%s/%s" % (dst, name)
+def upload(file_obj, sha1):
+    if not os.path.exists(settings.STORAGE_BACKEND_LOCAL_DIR):
+        os.makedirs(settings.STORAGE_BACKEND_LOCAL_DIR) # pragma: no cover
 
-    if not os.path.exists(dst):
-        os.makedirs(dst) # pragma: no cover
+    input_file = open(file_obj, 'r')
+    output = os.path.join(settings.STORAGE_BACKEND_LOCAL_DIR,sha1)
 
     with open(output, 'wb+') as destination:
         while True:
@@ -18,12 +17,10 @@ def upload(file_obj, name):
                 break
             destination.write(chunk)
 
-    return "%s/%s" % (settings.STORAGE_BASE_URI, name)
-
-def download(url):
-    filename = url.replace("local://", "")
+def download(sha1):
+    filename = os.path.join(settings.STORAGE_BACKEND_LOCAL_DIR,sha1)
     return file(filename)
 
-def delete(url):
-    filename = url.replace("local://", "")
+def delete(sha1):
+    filename = os.path.join(settings.STORAGE_BACKEND_LOCAL_DIR,sha1)
     os.unlink(filename)

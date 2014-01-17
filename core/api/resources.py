@@ -6,7 +6,7 @@ from core import storage
 from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
 from django.conf import settings
-import uuid, zipfile, tempfile, os
+import uuid, zipfile, tempfile, os, hashlib
 
 from django.http import HttpResponse
 from django.core.servers.basehttp import FileWrapper
@@ -17,13 +17,16 @@ from tastypie.authorization import Authorization
 class DataObject(object):
     def __init__(self, token=None):
         goo_server = settings.GOO_SERVER_URI
-        self.token = token
+        self.token = settings.GOO_SERVER_TOKEN
+        self.user_token = token
         self.server = API(goo_server)
 
     def load(self, oid):
-        obj = self.server.objects(oid).get(token=self.token)
+        obj = self.server.objects(oid).get(token=self.token,
+                                           user_token=self.user_token)
 
-        self.url = obj['url']
+        self.sha1 = obj['sha1']
+        self.data_proxy_servers = obj['data_proxy_servers']
         self.name = obj['name']
         self.size = obj['size']
         self.oid = oid
@@ -32,20 +35,28 @@ class DataObject(object):
 
     def file(self):
         """ Must call load(oid) load before """
-        return storage.download(url=self.url)
+        return storage.download(self.sha1)
 
     def save(self, name, req_file):
         self.name = name
 
-        # internal storage name
-        filename = "%s" % uuid.uuid4()
+        # calculate SHA256
+        digest = hashlib.sha1()
+        with open(req_file,'rb') as f:
+            for chunk in iter(lambda: f.read(128*digest.block_size), b''):
+                digest.update(chunk)
+
+        self.sha1 = digest.hexdigest()
         self.size = os.path.getsize(req_file)
-        self.url = storage.upload(req_file, filename)
+        storage.upload(req_file, self.sha1)
 
         values = {"name": self.name,
                   "size": self.size,
-                  "url": self.url}
-        response = self.server.objects.post(values, token=self.token)
+                  "sha1": self.sha1}
+
+        response = self.server.objects.post(values,
+                                            token=self.token,
+                                            user_token=self.user_token)
 
         self.oid = response["id"]
         self.resource_uri = response["resource_uri"]
@@ -53,9 +64,10 @@ class DataObject(object):
     def delete(self):
         """ Must call load(oid) load before """
         # content data deletion
-        storage.delete(url=self.url)
+        storage.delete(self.sha1)
         # metadata deletion
-        self.server.objects(self.oid).delete(token=self.token)
+        self.server.objects(self.oid).delete(token=self.token,
+                                             user_token=self.user_token)
 
 class TokenAuthentication(Authentication):
     def is_authenticated(self, request, **kwargs):

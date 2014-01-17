@@ -1,23 +1,22 @@
 from urlparse import urlparse
 from django.conf import settings
-import local, gsiftp
+import local
 
 def _get_backend_method(method):
-    scheme = urlparse(settings.STORAGE_BASE_URI).scheme
     try:
-        module = globals()[scheme]
+        module = globals()[settings.STORAGE_BACKEND]
         return getattr(module, method)
     except AttributeError:
         raise NotImplementedError
 
-def upload(file_obj, filename):
+def upload(file_obj, sha1):
     f = _get_backend_method('upload')
-    return f(file_obj, filename)
+    return f(file_obj, sha1)
 
-def download(url):
+def download(sha1):
     f = _get_backend_method('download')
-    return f(url)
+    return f(sha1)
 
-def delete(url):
+def delete(sha1):
     f = _get_backend_method('delete')
-    return f(url)
+    return f(sha1)
