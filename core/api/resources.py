@@ -22,7 +22,7 @@ class DataObject(object):
         self.server = API(goo_server)
 
     def load(self, oid):
-        obj = self.server.objects(oid).get(token=self.token,
+        obj = self.server.dataobjects(oid).get(token=self.token,
                                            user_token=self.user_token)
 
         self.sha1 = obj['sha1']
@@ -54,7 +54,7 @@ class DataObject(object):
                   "size": self.size,
                   "sha1": self.sha1}
 
-        response = self.server.objects.post(values,
+        response = self.server.dataobjects.post(values,
                                             token=self.token,
                                             user_token=self.user_token)
 
@@ -66,7 +66,7 @@ class DataObject(object):
         # content data deletion
         storage.delete(self.sha1)
         # metadata deletion
-        self.server.objects(self.oid).delete(token=self.token,
+        self.server.dataobjects(self.oid).delete(token=self.token,
                                              user_token=self.user_token)
 
 class TokenAuthentication(Authentication):
@@ -106,22 +106,22 @@ class TokenAuthentication(Authentication):
 
         return False # pragma: no cover
 
-class ObjectResource(Resource):
+class DataObjectResource(Resource):
     """This resource handler auth requests.
 
     Allowed Methods:
     ----------------
 
-        POST   /dataproxy/objects/       # Upload a new object
-        GET    /dataproxy/objects/{id}/  # Download an object
-        DELETE /dataproxy/objects/{id}/  # Delete an object
+        POST   /dataproxy/dataobjects/       # Upload a new object
+        GET    /dataproxy/dataobjects/{id}/  # Download an object
+        DELETE /dataproxy/dataobjects/{id}/  # Delete an object
     """
 
     name = fields.CharField(attribute='name')
     data = fields.FileField(attribute='file')
 
     class Meta:
-        resource_name = 'dataproxy/objects'
+        resource_name = 'dataproxy/dataobjects'
         object_class = DataObject
         
         list_allowed_methods = ['post']
@@ -218,7 +218,7 @@ class ObjectResource(Resource):
             data.update(request.GET.copy())
             data['files'] = request.FILES
             return data
-        return super(ObjectResource,
+        return super(DataObjectResource,
                      self).deserialize(request,
                                        data,
                                        format) #pragma: no cover

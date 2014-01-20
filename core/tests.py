@@ -6,9 +6,9 @@ import hashlib
 
 import json
 
-class ObjectResourceTest(TestCase):
+class DataObjectResourceTest(TestCase):
     def setUp(self):
-        super(ObjectResourceTest, self).setUp()
+        super(DataObjectResourceTest, self).setUp()
 
         self.endpoint = 'http://localhost:8001/api/v1/dataproxy/'
         self.format = 'json'
@@ -24,7 +24,7 @@ class ObjectResourceTest(TestCase):
 
     def test_token_missing(self):
         try:
-            ret = self.server.objects(9999).get()
+            ret = self.server.dataobjects(9999).get()
         except HttpClientError as e:
             if e.code != 401:
                 self.fail('Return code != 401')
@@ -33,7 +33,7 @@ class ObjectResourceTest(TestCase):
 
     def test_bad_token(self):
         try:
-            ret = self.server.objects(9999).get(token=self.bad_token)
+            ret = self.server.dataobjects(9999).get(token=self.bad_token)
         except HttpClientError as e:
             if e.code != 401:
                 self.fail('Return code != 401')
@@ -45,7 +45,7 @@ class ObjectResourceTest(TestCase):
             f = open(self.filename, 'r')
             object_data = {'name': "%s" % self.object_name,
                            'file': f}
-            result = self.server.objects.post(data=object_data, token=self.token)
+            result = self.server.dataobjects.post(data=object_data, token=self.token)
             f.close()
             return result['resource_uri']
         except HttpClientError as e:
@@ -68,7 +68,7 @@ class ObjectResourceTest(TestCase):
         f.close()
 
         try:
-            result = self.server.objects(oid).get(token=self.token)
+            result = self.server.dataobjects(oid).get(token=self.token)
         except HttpClientError as e:
             self.fail('Return code == %d' % e.code)
         except Exception as e:
@@ -84,7 +84,7 @@ class ObjectResourceTest(TestCase):
         oid = int(resource_uri.split('/')[-2:][0])
 
         try:
-            result = self.server.objects(oid).delete(token=self.token)
+            result = self.server.dataobjects(oid).delete(token=self.token)
         except HttpClientError as e:
             self.fail('Return code == %d' % e.code)
         except Exception as e:
