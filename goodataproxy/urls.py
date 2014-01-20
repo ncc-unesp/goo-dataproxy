@@ -7,7 +7,7 @@ from core.api.resources import *
 # admin.autodiscover()
 
 v1_api = Api(api_name='v1')
-v1_api.register(ObjectResource())
+v1_api.register(DataObjectResource())
 
 
 urlpatterns = patterns('',
