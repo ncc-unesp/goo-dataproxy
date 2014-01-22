@@ -7,14 +7,15 @@ from gooclientlib.exceptions import HttpClientError
 
 from django.conf import settings
 
-import os, hashlib
+import os, hashlib, sys
 
 class DataObject(object):
     def __init__(self, token=None):
         goo_server = settings.GOO_SERVER_URI
         self.proxy_token = settings.GOO_SERVER_TOKEN
         self.user_token = token
-        self.server = API(goo_server)
+        debug = sys.stderr if settings.DEBUG else False
+        self.server = API(goo_server, debug=debug)
 
     def load(self, oid):
         obj = self.server.dataobjects(oid).get(token=self.user_token,

@@ -5,6 +5,7 @@ from gooclientlib.api import API
 from gooclientlib.exceptions import HttpClientError
 
 from django.conf import settings
+import sys
 
 class TokenAuthentication(Authentication):
     def is_authenticated(self, request, **kwargs):
@@ -15,7 +16,8 @@ class TokenAuthentication(Authentication):
             return False
 
         goo_server = settings.GOO_SERVER_URI
-        server = API(goo_server, debug=False)
+        debug = sys.stderr if settings.DEBUG else False
+        server = API(goo_server, debug=debug)
         try:
             response = server.token.get(token=token)
             if response['expire_time']:

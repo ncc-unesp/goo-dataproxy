@@ -5,6 +5,7 @@ from gooclientlib.exceptions import HttpClientError
 import hashlib
 
 import json
+import sys
 
 class DataObjectResourceTest(TestCase):
     def setUp(self):
@@ -16,7 +17,8 @@ class DataObjectResourceTest(TestCase):
         self.filename = '/bin/true'
         self.object_name = 'true'
 
-        self.server = API(self.endpoint, debug=False)
+        debug = sys.stderr if settings.DEBUG else False
+        self.server = API(self.endpoint, debug=debug)
 
         # Create one token
         self.token = '2bae7fa7-5810-4664-8264-725fa3a714b1'
