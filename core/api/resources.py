@@ -103,9 +103,10 @@ class DataObjectResource(Resource):
                     destination.write(chunk)
 
         name = bundle.data['name']
+        public = bundle.data.has_key('public')
 
         bundle.obj = DataObject(bundle.request.token)
-        bundle.obj.save(name, filepath)
+        bundle.obj.save(name, filepath, public)
 
         # Force tempfile to be removed
         os.unlink(filepath)

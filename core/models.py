@@ -33,8 +33,9 @@ class DataObject(object):
         """ Must call load(oid) load before """
         return storage.download(self.sha1)
 
-    def save(self, name, req_file):
+    def save(self, name, req_file, public=False):
         self.name = name
+        self.public = public
 
         # calculate SHA256
         digest = hashlib.sha1()
@@ -48,7 +49,8 @@ class DataObject(object):
 
         values = {"name": self.name,
                   "size": self.size,
-                  "sha1": self.sha1}
+                  "sha1": self.sha1,
+                  "public": self.public}
 
         response = self.server.dataobjects.post(values, token=self.user_token,
                                                 proxy_token=self.proxy_token)
