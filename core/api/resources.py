@@ -41,16 +41,16 @@ class DataObjectResource(Resource):
     Allowed Methods:
     ----------------
 
-        POST   /dataproxy/dataobjects/       # Upload a new object
-        GET    /dataproxy/dataobjects/{id}/  # Download an object
-        DELETE /dataproxy/dataobjects/{id}/  # Delete an object
+        POST   /dataobjects/       # Upload a new object
+        GET    /dataobjects/{id}/  # Download an object
+        DELETE /dataobjects/{id}/  # Delete an object
     """
 
     name = fields.CharField(attribute='name')
     data = fields.FileField(attribute='file')
 
     class Meta:
-        resource_name = 'dataproxy/dataobjects'
+        resource_name = 'dataobjects'
         object_class = DataObject
         
         list_allowed_methods = ['post']
