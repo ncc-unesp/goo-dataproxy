@@ -1,6 +1,6 @@
 # This file is part of goo-dataproxy.
 #
-# Copyright (c) 2103-2014 by Núcleo de Computação Científica, UNESP
+# Copyright (c) 2103-2014 by Nucleo de Computacao Cientifica, UNESP
 #
 # Authors:
 #    Beraldo Leal <beraldo AT ncc DOT unesp DOT br>
